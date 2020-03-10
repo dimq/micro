@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -46,7 +48,9 @@ func init() {
 }
 
 func main() {
-	fmt.Println("starting consumer")
+	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+
+	Info.Println("starting consumer")
 
 	config := sarama.NewConfig()
 
@@ -89,15 +93,15 @@ func main() {
 	}()
 
 	<-consumer.ready // Await till the consumer has been set up
-	log.Println("Sarama consumer up and running!...")
+	Info.Println("Sarama consumer up and running!...")
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 	select {
 	case <-ctx.Done():
-		log.Println("terminating: context cancelled")
+		Info.Println("terminating: context cancelled")
 	case <-sigterm:
-		log.Println("terminating: via signal")
+		Info.Println("terminating: via signal")
 	}
 	cancel()
 	wg.Wait()
@@ -123,9 +127,22 @@ func (consumer *Consumer) Cleanup(sarama.ConsumerGroupSession) error {
 func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 
 	for message := range claim.Messages() {
-		log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+		msg, err := ParseMessage(message)
+		if err != nil {
+			Error.Println(err)
+		} else {
+			Info.Println(msg)
+		}
 		session.MarkMessage(message, "")
 	}
 
 	return nil
+}
+
+func ParseMessage(msg *sarama.ConsumerMessage) (Message, error) {
+	var m Message
+	if err := json.Unmarshal(msg.Value, &m); err != nil {
+		return Message{}, errors.New("invalid format")
+	}
+	return m, nil
 }
