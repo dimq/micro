@@ -94,9 +94,9 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		msg, err := ParseMessage(message)
 		if err != nil {
 			Error.Println(err)
-		} else {
-			Info.Println(msg)
+			continue
 		}
+		Info.Println(msg)
 		session.MarkMessage(message, "")
 	}
 
