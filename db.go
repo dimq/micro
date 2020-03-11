@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/jinzhu/gorm"
@@ -17,7 +16,6 @@ func initDB() {
 			os.Getenv("PASSWORD"))
 
 	if err != nil {
-		fmt.Println(err)
 		panic("failed to connect database")
 	}
 
@@ -26,20 +24,20 @@ func initDB() {
 }
 
 func CheckHashExist(hash string) bool {
-	fmt.Println(hash)
 	var tempHash HashTable
 	if db.Where("hash = ?", hash).First(&tempHash).RecordNotFound() {
 		return true
 	}
-	//if !db.First(&tempHash, "hash = ?", hash).RecordNotFound() {
-	//	return true
-	//}
 	return false
 }
 
 func InsertHash(hash string) bool {
-	if err := db.Create(&HashTable{Hash: hash}).GetErrors(); err != nil {
+	if err := db.Create(&HashTable{Hash: hash}).GetErrors(); len(err) != 0 {
 		return false
 	}
 	return true
+}
+
+func CloseDB() {
+	db.Close()
 }

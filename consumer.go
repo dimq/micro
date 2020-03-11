@@ -29,7 +29,7 @@ func Consume() {
 	config.Version = sarama.V0_10_2_0
 	config.ClientID = username
 
-	//config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	consumer := Consumer{
 		ready: make(chan bool),
@@ -99,19 +99,16 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 			Error.Println(err)
 			continue
 		}
+		Info.Println(fmt.Sprintf("%+v\n", msg))
 		md5Msg := GenerateMD5Hash(string(message.Value))
-		Info.Println(msg)
-		Info.Println(md5Msg)
 		if CheckHashExist(md5Msg) {
-			fmt.Println("insert it")
 			if !InsertHash(md5Msg) {
 				Error.Println("Error during insert")
 			}
-		} else {
-			fmt.Println("dont insert it")
 		}
 		session.MarkMessage(message, "")
 	}
+	defer CloseDB()
 
 	return nil
 }
