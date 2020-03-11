@@ -9,3 +9,7 @@ type Message struct {
 type Consumer struct {
 	ready chan bool
 }
+
+type HashTable struct {
+	Hash string `gorm:"PRIMARY_KEY;INDEX;UNIQUE"`
+}

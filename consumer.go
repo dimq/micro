@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -96,7 +99,17 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 			Error.Println(err)
 			continue
 		}
+		md5Msg := GenerateMD5Hash(string(message.Value))
 		Info.Println(msg)
+		Info.Println(md5Msg)
+		if CheckHashExist(md5Msg) {
+			fmt.Println("insert it")
+			if !InsertHash(md5Msg) {
+				Error.Println("Error during insert")
+			}
+		} else {
+			fmt.Println("dont insert it")
+		}
 		session.MarkMessage(message, "")
 	}
 
@@ -109,4 +122,10 @@ func ParseMessage(msg *sarama.ConsumerMessage) (Message, error) {
 		return Message{}, errors.New("invalid format")
 	}
 	return m, nil
+}
+
+func GenerateMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
