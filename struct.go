@@ -1,7 +1,7 @@
 package main
 
 type Message struct {
-	ID      string `json:"id"`
+	ID      int    `json:"id"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
