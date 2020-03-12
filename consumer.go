@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"github.com/Shopify/sarama"
+	"github.com/dimq/micro/models"
 )
 
 func Consume() {
@@ -94,28 +95,28 @@ func (consumer *Consumer) Cleanup(sarama.ConsumerGroupSession) error {
 func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 
 	for message := range claim.Messages() {
-		msg, err := ParseMessage(message)
+		msg, err := ParseMessage(message.Value)
 		if err != nil {
 			Error.Println(err)
 			continue
 		}
+
 		Info.Println(fmt.Sprintf("%+v\n", msg))
 		md5Msg := GenerateMD5Hash(string(message.Value))
-		if CheckHashExist(md5Msg) {
-			if !InsertHash(md5Msg) {
-				Error.Println("Error during insert")
-			}
+
+		if errUpsert := models.HashUpsert(db, md5Msg); errUpsert != nil {
+			Error.Println(errUpsert)
 		}
+
 		session.MarkMessage(message, "")
 	}
-	defer CloseDB()
 
 	return nil
 }
 
-func ParseMessage(msg *sarama.ConsumerMessage) (Message, error) {
+func ParseMessage(msg []byte) (Message, error) {
 	var m Message
-	if err := json.Unmarshal(msg.Value, &m); err != nil {
+	if err := json.Unmarshal([]byte(msg), &m); err != nil {
 		return Message{}, errors.New("invalid format")
 	}
 	return m, nil

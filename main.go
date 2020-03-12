@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/dimq/micro/models"
 	"github.com/jinzhu/gorm"
 	"github.com/namsral/flag"
 )
@@ -43,11 +44,17 @@ func init() {
 }
 
 func main() {
+	var err error
+
 	//Setup logger
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	//Init database connection
-	initDB()
+	db, err = models.InitDB()
+	if err != nil {
+		Error.Println(err)
+	}
+	defer db.Close()
 
 	//Setup consumer for Kafka
 	Consume()
