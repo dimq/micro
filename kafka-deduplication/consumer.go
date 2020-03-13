@@ -8,15 +8,20 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/dimq/micro/models"
+	"github.com/hashicorp/go-retryablehttp"
 )
+
+const baseURL = "http://localhost:8080"
 
 func Consume() {
 	Info.Println("starting consumer")
@@ -108,6 +113,9 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		if errUpsert != nil {
 			Error.Println(errUpsert)
 		}
+		if firstInsert {
+			pushMessage(string(message.Value))
+		}
 		fmt.Println(firstInsert)
 
 		session.MarkMessage(message, "")
@@ -145,4 +153,28 @@ func GenerateHash(text string) string {
 	hasher := sha256.New()
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func pushMessage(msg string) {
+	req, err := http.NewRequest("POST", baseURL+"/message", strings.NewReader(msg))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	retryReq, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	client := retryablehttp.NewClient()
+	client.Backoff = retryablehttp.LinearJitterBackoff
+	client.RetryWaitMin = 800 * time.Millisecond
+	client.RetryWaitMax = 1200 * time.Millisecond
+	client.RetryMax = 4
+	client.ErrorHandler = retryablehttp.PassthroughErrorHandler
+
+	_, err = client.Do(retryReq)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
