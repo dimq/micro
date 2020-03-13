@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -102,11 +102,13 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		}
 
 		Info.Println(fmt.Sprintf("%+v\n", msg))
-		md5Msg := GenerateMD5Hash(string(message.Value))
+		md5Msg := GenerateHash(string(message.Value))
 
-		if errUpsert := models.HashUpsert(db, md5Msg); errUpsert != nil {
+		firstInsert, errUpsert := models.HashUpsert(db, md5Msg)
+		if errUpsert != nil {
 			Error.Println(errUpsert)
 		}
+		fmt.Println(firstInsert)
 
 		session.MarkMessage(message, "")
 	}
@@ -122,8 +124,8 @@ func ParseMessage(msg []byte) (Message, error) {
 	return m, nil
 }
 
-func GenerateMD5Hash(text string) string {
-	hasher := md5.New()
+func GenerateHash(text string) string {
+	hasher := sha256.New()
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
 }

@@ -10,18 +10,12 @@ import (
 
 func InitDB() (*gorm.DB, error) {
 	var (
-		dbHost string
-		dbUser string
-		dbPass string
-		dbName string
-		dbPort string
+		dbHost string = os.Getenv("DB_HOST")
+		dbUser string = os.Getenv("DB_USERNAME")
+		dbPass string = os.Getenv("DB_PASSWORD")
+		dbName string = os.Getenv("DB_NAME")
+		dbPort string = os.Getenv("DB_PORT")
 	)
-
-	dbHost = os.Getenv("DB_HOST")
-	dbUser = os.Getenv("DB_USERNAME")
-	dbPass = os.Getenv("DB_PASSWORD")
-	dbName = os.Getenv("DB_NAME")
-	dbPort = os.Getenv("DB_PORT")
 
 	dbUri := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s", dbHost, dbPort, dbUser, dbName, dbPass)
 

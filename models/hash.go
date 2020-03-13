@@ -7,18 +7,27 @@ type HashTable struct {
 }
 
 // HashUpsert /
-func HashUpsert(db *gorm.DB, hash string) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		var tempHash HashTable
-
-		errCheck := tx.Where("hash = ?", hash).First(&tempHash).Error
-		if errCheck == gorm.ErrRecordNotFound {
-			if errInsert := tx.Create(&HashTable{Hash: hash}).Error; errInsert != nil {
-				return errInsert
-			}
-		} else {
-			return errCheck
+func HashUpsert(db *gorm.DB, hash string) (bool, error) {
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
 		}
-		return nil
-	})
+	}()
+	if err := tx.Error; err != nil {
+		return false, err
+	}
+	var tempHash HashTable
+
+	errCheck := tx.Where("hash = ?", hash).First(&tempHash).Error
+	if errCheck == gorm.ErrRecordNotFound {
+		if errInsert := tx.Create(&HashTable{Hash: hash}).Error; errInsert != nil {
+			tx.Rollback()
+			return false, errInsert
+		}
+
+	} else {
+		return false, errCheck
+	}
+	return true, tx.Commit().Error
 }
