@@ -20,14 +20,13 @@ func HashUpsert(db *gorm.DB, hash string) (bool, error) {
 	var tempHash HashTable
 
 	errCheck := tx.Where("hash = ?", hash).First(&tempHash).Error
-	if errCheck == gorm.ErrRecordNotFound {
-		if errInsert := tx.Create(&HashTable{Hash: hash}).Error; errInsert != nil {
-			tx.Rollback()
-			return false, errInsert
-		}
-
-	} else {
+	if errCheck != gorm.ErrRecordNotFound {
 		return false, errCheck
+
+	}
+	if errInsert := tx.Create(&HashTable{Hash: hash}).Error; errInsert != nil {
+		tx.Rollback()
+		return false, errInsert
 	}
 	return true, tx.Commit().Error
 }

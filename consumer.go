@@ -117,10 +117,27 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 }
 
 func ParseMessage(msg []byte) (Message, error) {
-	var m Message
+	var (
+		m                  Message
+		invalidFormatError = errors.New("invalid format")
+	)
+
 	if err := json.Unmarshal([]byte(msg), &m); err != nil {
-		return Message{}, errors.New("invalid format")
+		return m, invalidFormatError
 	}
+
+	if m.ID == 0 {
+		return Message{}, invalidFormatError
+	}
+
+	if m.Code == "" {
+		return Message{}, invalidFormatError
+	}
+
+	if m.Message == "" {
+		return Message{}, invalidFormatError
+	}
+
 	return m, nil
 }
 

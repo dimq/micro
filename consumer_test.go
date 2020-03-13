@@ -15,8 +15,9 @@ func TestParseMessage(t *testing.T) {
 		want    Message
 		wantErr bool
 	}{
-		{name: "Good message", args: args{[]byte("{\"id\": 1236, \"code\": \"200\", \"message\": \"shehh\"}")}, want: Message{ID: 1236, Code: "200", Message: "shehh"}, wantErr: false},
-		{name: "Bad message", args: args{[]byte("{\"id\": 1236, \"code\": \"200\", \"sdffsfdfdf\": \"shehh\"}")}, want: Message{}, wantErr: true},
+		{name: "Should return the Message struct with all fields filled", args: args{[]byte("{\"id\": 1236, \"code\": \"200\", \"message\": \"shehh\"}")}, want: Message{ID: 1236, Code: "200", Message: "shehh"}, wantErr: false},
+		{name: "Bad message bad field naming should return an error", args: args{[]byte("{\"id\": 1236, \"code\": \"200\", \"sdffsfdfdf\": \"shehh\"}")}, want: Message{}, wantErr: true},
+		{name: "Missing field should print an error", args: args{[]byte("{\"id\": 1236, \"code\": \"200\", \"message\": \"shehh\"}")}, want: Message{ID: 1236, Code: "200", Message: "shehh"}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -41,7 +42,7 @@ func TestGenerateHash(t *testing.T) {
 		args args
 		want string
 	}{
-		{"shplop", args{"shehhh"}, "4acd7e736c8b20955201397800f86b023c478341b670eec2dd8899d941831ec0"},
+		{"should return the hash of the value passed in parameter", args{"shehhh"}, "4acd7e736c8b20955201397800f86b023c478341b670eec2dd8899d941831ec0"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
